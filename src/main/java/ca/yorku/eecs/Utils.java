@@ -12,41 +12,42 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 class Utils {
-  // use for extracting query params
+  /* Extract query parameters */
   public static Map<String, String> splitQuery(String query) throws UnsupportedEncodingException {
-    Map<String, String> query_pairs = new LinkedHashMap<String, String>();
+    Map<String, String> queryPairs = new LinkedHashMap<String, String>();
     String[] pairs = query.split("&");
     for (String pair : pairs) {
       int idx = pair.indexOf("=");
-      query_pairs.put(
+      queryPairs.put(
           URLDecoder.decode(pair.substring(0, idx), "UTF-8"),
           URLDecoder.decode(pair.substring(idx + 1), "UTF-8"));
     }
-    return query_pairs;
+    return queryPairs;
   }
 
-  // one possible option for extracting JSON body as String
+  /* Extract JSON body as `String` (method 1) */
   public static String convert(InputStream inputStream) throws IOException {
 
-    try (BufferedReader br = new BufferedReader(new InputStreamReader(inputStream))) {
-      return br.lines().collect(Collectors.joining(System.lineSeparator()));
+    try (BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream))) {
+      return bufferedReader.lines().collect(Collectors.joining(System.lineSeparator()));
     }
   }
 
-  // another option for extracting JSON body as String
-  public static String getBody(HttpExchange he) throws IOException {
-    InputStreamReader isr = new InputStreamReader(he.getRequestBody(), "utf-8");
-    BufferedReader br = new BufferedReader(isr);
+  /* Extract JSON body as `String` (method 2) */
+  public static String getBody(HttpExchange httpExchange) throws IOException {
+    InputStreamReader inputStreamReader =
+        new InputStreamReader(httpExchange.getRequestBody(), "utf-8");
+    BufferedReader bufferedReader = new BufferedReader(inputStreamReader);
 
     int b;
-    StringBuilder buf = new StringBuilder();
-    while ((b = br.read()) != -1) {
-      buf.append((char) b);
+    StringBuilder stringBuilder = new StringBuilder();
+    while ((b = bufferedReader.read()) != -1) {
+      stringBuilder.append((char) b);
     }
 
-    br.close();
-    isr.close();
+    bufferedReader.close();
+    inputStreamReader.close();
 
-    return buf.toString();
+    return stringBuilder.toString();
   }
 }
