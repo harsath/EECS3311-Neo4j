@@ -41,10 +41,39 @@ public class DatabaseExecutor {
     }
   }
 
+  public void addRelationship(String movieId, String actorId) {
+    try (Session session = driver.session()) {
+      session.writeTransaction(
+          tx
+          -> tx.run(
+              "MATCH (a:actor), (m:movie) WHERE a.id = $actorId AND m.id = $movieId CREATE (a)-[r:ACTED_IN]->(m)",
+              parameters("actorId", actorId, "movieId", movieId)));
+    }
+  }
+
   public boolean checkIfActorIdExists(String actorId) {
     try (Session session = driver.session()) {
       StatementResult result = session.run("MATCH (n {id: $actorId}) RETURN n",
                                            parameters("actorId", actorId));
+      return result.hasNext();
+    }
+  }
+
+  public boolean checkIfMovieIdExists(String movieId) {
+    try (Session session = driver.session()) {
+      StatementResult result = session.run("MATCH (n {id: $movieId}) RETURN n",
+                                           parameters("movieId", movieId));
+      return result.hasNext();
+    }
+  }
+
+  public boolean checkIfRelationshipExists(String movieId, String actorId) {
+    try (Session session = driver.session()) {
+      StatementResult result = session.writeTransaction(
+          tx
+          -> tx.run(
+              "MATCH (a:actor)-[:ACTED_IN]->(m:movie) WHERE a.id = $actorId AND m.id = $movieId RETURN a, m",
+              parameters("actorId", actorId, "movieId", movieId)));
       return result.hasNext();
     }
   }

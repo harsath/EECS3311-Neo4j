@@ -108,13 +108,13 @@ public class ProjectHttpHandler implements HttpHandler {
       sendResponse(exchange, 400, "Must include 'name'.");
       return;
     }
-    /* Check if JSON property 'actorId' exists */
+    /* Check if JSON property 'movieId' exists */
     if (!jsonHttpBody.has("movieId")) {
       sendResponse(exchange, 400, "Must include 'movieId'.");
       return;
     }
     /* Edge case */
-    if (databaseExecutor.checkIfActorIdExists(
+    if (databaseExecutor.checkIfMovieIdExists(
             jsonHttpBody.getString("movieId"))) {
       sendResponse(exchange, 400, "The 'movieId' already exists.");
       return;
@@ -132,8 +132,47 @@ public class ProjectHttpHandler implements HttpHandler {
   }
 
   private void addRelationship(HttpExchange exchange) throws IOException {
-    String response = "addRelationship";
-    sendResponse(exchange, 404, response);
+    /* Unsupported HTTP method to this API endpoint */
+    if (checkRequestMethod(exchange, "PUT")) {
+      sendResponse(exchange, 405, "Endpoint only accepts PUT requests.");
+      return;
+    }
+    String requestBody = Utils.getBody(exchange);
+    JSONObject jsonHttpBody;
+    /* Invalid JSON format */
+    try {
+      jsonHttpBody = Utils.convertToJSONObject(requestBody);
+    } catch (JSONException e) {
+      sendResponse(exchange, 400, "Invalid JSON string.");
+      return;
+    }
+    /* Check if JSON property 'actorId' exists */
+    if (!jsonHttpBody.has("actorId")) {
+      sendResponse(exchange, 400, "Must include 'actorId'.");
+      return;
+    }
+    /* Check if JSON property 'movieId' exists */
+    if (!jsonHttpBody.has("movieId")) {
+      sendResponse(exchange, 400, "Must include 'movieId'.");
+      return;
+    }
+    /* Edge case */
+    if (databaseExecutor.checkIfRelationshipExists(
+            jsonHttpBody.getString("movieId"),
+            jsonHttpBody.getString("actorId"))) {
+      sendResponse(exchange, 400, "Relationship already exists.");
+      return;
+    }
+    /* Add to database, or send HTTP 500 in case of database error */
+    try {
+      databaseExecutor.addRelationship(jsonHttpBody.getString("movieId"),
+                                       jsonHttpBody.getString("actorId"));
+    } catch (Exception e) {
+      e.printStackTrace();
+      sendResponse(exchange, 500, "Database error.");
+      return;
+    }
+    sendResponse(exchange, 200, "Added successfully.");
   }
 
   private void getActor(HttpExchange exchange) throws IOException {

@@ -4,6 +4,7 @@ Library         RequestsLibrary
 Test Timeout    30 seconds
 
 Suite Setup    Create Session    localhost    http://localhost:8080
+Suite Teardown  Delete All Sessions
 
 *** Test Cases ***
 addActorPass
