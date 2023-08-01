@@ -42,10 +42,3 @@ jobs:
       - name: Run Robot Tests
         run: | 
           robot robot_tests/addActorTests.robot robot_tests/addMovieTests.robot robot_tests/addRelationshipTests.robot
-
-  cleanup:
-    runs-on: ubuntu-latest
-    needs: build_and_test
-    steps:
-      - name: Remove Docker containers
-        run: docker stop $(docker ps -a -q) && docker rm $(docker ps -a -q)
