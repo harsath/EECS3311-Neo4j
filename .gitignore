@@ -16,3 +16,6 @@ workbench.xmi
 .project
 .settings/
 .vscode/
+output.xml
+log.html
+report.html

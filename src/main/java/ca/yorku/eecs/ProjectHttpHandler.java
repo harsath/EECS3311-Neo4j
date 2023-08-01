@@ -89,8 +89,46 @@ public class ProjectHttpHandler implements HttpHandler {
   }
 
   private void addMovie(HttpExchange exchange) throws IOException {
-    String response = "addMovie";
-    sendResponse(exchange, 200, response);
+    /* Unsupported HTTP method to this API endpoint */
+    if (checkRequestMethod(exchange, "PUT")) {
+      sendResponse(exchange, 405, "Endpoint only accepts PUT requests.");
+      return;
+    }
+    String requestBody = Utils.getBody(exchange);
+    JSONObject jsonHttpBody;
+    /* Invalid JSON format */
+    try {
+      jsonHttpBody = Utils.convertToJSONObject(requestBody);
+    } catch (JSONException e) {
+      sendResponse(exchange, 400, "Invalid JSON string.");
+      return;
+    }
+    /* Check if JSON property 'name' exists */
+    if (!jsonHttpBody.has("name")) {
+      sendResponse(exchange, 400, "Must include 'name'.");
+      return;
+    }
+    /* Check if JSON property 'actorId' exists */
+    if (!jsonHttpBody.has("movieId")) {
+      sendResponse(exchange, 400, "Must include 'movieId'.");
+      return;
+    }
+    /* Edge case */
+    if (databaseExecutor.checkIfActorIdExists(
+            jsonHttpBody.getString("movieId"))) {
+      sendResponse(exchange, 400, "The 'movieId' already exists.");
+      return;
+    }
+    /* Add to database, or send HTTP 500 in case of database error */
+    try {
+      databaseExecutor.addMovie(jsonHttpBody.getString("movieId"),
+                                jsonHttpBody.getString("name"));
+    } catch (Exception e) {
+      e.printStackTrace();
+      sendResponse(exchange, 500, "Database error.");
+      return;
+    }
+    sendResponse(exchange, 200, "Added successfully.");
   }
 
   private void addRelationship(HttpExchange exchange) throws IOException {

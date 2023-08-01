@@ -32,6 +32,15 @@ public class DatabaseExecutor {
     }
   }
 
+  public void addMovie(String id, String name) {
+    try (Session session = driver.session()) {
+      session.writeTransaction(
+          tx
+          -> tx.run("MERGE (a:movie {id: $id, name: $name})",
+                    parameters("id", id, "name", name)));
+    }
+  }
+
   public boolean checkIfActorIdExists(String actorId) {
     try (Session session = driver.session()) {
       StatementResult result = session.run("MATCH (n {id: $actorId}) RETURN n",
