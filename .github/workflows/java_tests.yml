@@ -41,4 +41,4 @@ jobs:
 
       - name: Run Robot Tests
         run: | 
-          robot robot_tests/addActorTests.robot robot_tests/addMovieTests.robot robot_tests/addRelationshipTests.robot
+          robot robot_tests/addActorTests.robot robot_tests/addMovieTests.robot robot_tests/addRelationshipTests.robot robot_tests/hasRelationshipTests.robot
