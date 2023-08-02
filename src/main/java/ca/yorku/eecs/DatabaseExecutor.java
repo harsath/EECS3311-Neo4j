@@ -53,7 +53,7 @@ public class DatabaseExecutor {
 
   public boolean checkIfActorIdExists(String actorId) {
     try (Session session = driver.session()) {
-      StatementResult result = session.run("MATCH (n {id: $actorId}) RETURN n",
+      StatementResult result = session.run("MATCH (n:actor {id: $actorId}) RETURN n",
                                            parameters("actorId", actorId));
       return result.hasNext();
     }
@@ -61,7 +61,7 @@ public class DatabaseExecutor {
 
   public boolean checkIfMovieIdExists(String movieId) {
     try (Session session = driver.session()) {
-      StatementResult result = session.run("MATCH (n {id: $movieId}) RETURN n",
+      StatementResult result = session.run("MATCH (n:movie {id: $movieId}) RETURN n",
                                            parameters("movieId", movieId));
       return result.hasNext();
     }
