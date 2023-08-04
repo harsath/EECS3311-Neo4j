@@ -182,11 +182,34 @@ public class ProjectHttpHandler implements HttpHandler {
   }
 
   private void getMovie(HttpExchange exchange) throws IOException {
-    String response = "getMovie";
-     if (checkRequestMethod(exchange, "GET")) {
-      sendResponse(exchange, 405, "Endpoint only accepts GET requests.");
+        /* Unsupported HTTP method to this API endpoint */
+    if (checkRequestMethod(exchange, "GET")) {
+        sendResponse(exchange, 405, "Endpoint only accepts GET requests.");
+        return;
+    }
+     String rawQuery = exchange.getRequestURI().getRawQuery();
+    /* Make sure useragent passes query-string */
+    if (rawQuery == null || rawQuery.isEmpty()) {
+      sendResponse(exchange, 405, "Must pass query to this endpoint.");
       return;
     }
+    /* Parse query string into a hashmap */
+    Map<String, String> queryParams = Utils.splitQuery(rawQuery);
+    /* Check if query property 'movieId' exists */
+    if (!queryParams.containsKey("movieId")) {
+        sendResponse(exchange, 400, "Must include 'movieId'.");
+        return;
+    }
+    String movieId = queryParams.get("movieId");
+     /* Check if 'movieId' exists in database */
+    if (!databaseExecutor.checkIfMovieIdExists(movieId)) {
+      sendResponse(exchange, 404, "'movieId' does not exist on database.");
+      return;
+    }
+    JSONObject jsonObject = new JSONObject();
+   
+    jsonObject.put("movieId", movieId);
+    
     sendResponse(exchange, 404, response);
   }
 
