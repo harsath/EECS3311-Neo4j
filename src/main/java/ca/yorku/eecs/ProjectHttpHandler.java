@@ -4,7 +4,9 @@ import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.List;
 import java.util.Map;
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -40,6 +42,9 @@ public class ProjectHttpHandler implements HttpHandler {
       break;
     case "/api/v1/computeBaconPath":
       computeBaconPath(exchange);
+      break;
+    case "/api/v1/clearDatabase":
+      clearDatabase(exchange);
       break;
     default:
       invalidRequest(exchange);
@@ -242,8 +247,63 @@ public class ProjectHttpHandler implements HttpHandler {
   }
 
   private void computeBaconPath(HttpExchange exchange) throws IOException {
-    String response = "computeBaconPath";
-    sendResponse(exchange, 404, response);
+    /* Unsupported HTTP method to this API endpoint */
+    if (checkRequestMethod(exchange, "GET")) {
+      sendResponse(exchange, 405, "Endpoint only accepts GET requests.");
+      return;
+    }
+    String rawQuery = exchange.getRequestURI().getRawQuery();
+    /* Make sure useragent passes query-string */
+    if (rawQuery == null || rawQuery.isEmpty()) {
+      sendResponse(exchange, 405, "Must pass query to this endpoint.");
+      return;
+    }
+    /* Parse query string into a hashmap */
+    Map<String, String> queryParams = Utils.splitQuery(rawQuery);
+    /* Check if query property 'actorId' exists */
+    if (!queryParams.containsKey("actorId")) {
+      sendResponse(exchange, 400, "Must include 'actorId'.");
+      return;
+    }
+    String actorId = queryParams.get("actorId");
+    /* Check if 'actorId' exists in database */
+    if (!databaseExecutor.checkIfActorIdExists(actorId)) {
+      sendResponse(exchange, 404, "'actorId' does not exist on database.");
+      return;
+    }
+    JSONObject jsonObject = new JSONObject();
+    JSONArray jsonArray = new JSONArray();
+    /* Edge case 3 */
+    if (actorId.equals(DatabaseExecutor.kevinBaconActorId)) {
+      jsonArray.put(actorId);
+      jsonObject.put("baconPath", jsonArray);
+      sendResponse(exchange, 200, jsonObject.toString());
+      return;
+    }
+    /* Always returns one path */
+    List<String> baconPath = databaseExecutor.getBaconPath(actorId);
+    /* Edge case 1 */
+    if (baconPath.isEmpty()) {
+      sendResponse(exchange, 404, "No path exists to the actor.");
+      return;
+    }
+    /* Send response path on response */
+    for (String id : baconPath) {
+      jsonArray.put(id);
+    }
+    jsonObject.put("baconPath", jsonArray);
+    sendResponse(exchange, 200, jsonObject.toString());
+  }
+
+  private void clearDatabase(HttpExchange exchange) throws IOException {
+    /* Unsupported HTTP method to this API endpoint */
+    if (checkRequestMethod(exchange, "GET")) {
+      sendResponse(exchange, 405, "Endpoint only accepts GET requests.");
+      return;
+    }
+    databaseExecutor.clearDatabase();
+    String response = "Cleared database.";
+    sendResponse(exchange, 200, response);
   }
 
   private void invalidRequest(HttpExchange exchange) throws IOException {
