@@ -183,6 +183,10 @@ public class ProjectHttpHandler implements HttpHandler {
 
   private void getMovie(HttpExchange exchange) throws IOException {
     String response = "getMovie";
+     if (checkRequestMethod(exchange, "GET")) {
+      sendResponse(exchange, 405, "Endpoint only accepts GET requests.");
+      return;
+    }
     sendResponse(exchange, 404, response);
   }
 
