@@ -77,6 +77,13 @@ public class DatabaseExecutor {
       return result.hasNext();
     }
   }
+public String getMovieName(String movieId) {
+    try (Session session = driver.session()) {
+        StatementResult result = session.run("MATCH (n:movie {id: $movieId}) RETURN n.name",
+                                             parameters("movieId", movieId));
+   
+            return result.next().get("n.name").asString();
 
+}
   public void close() { driver.close(); }
 }
