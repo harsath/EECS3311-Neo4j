@@ -40,7 +40,30 @@ public class DatabaseExecutor {
                     parameters("id", id, "name", name)));
     }
   }
+public String getMovieName(String movieId) {
+    try (Session session = driver.session()) {
+        StatementResult result = session.readTransaction(
+            tx -> tx.run("MATCH (n:movie {id: $movieId}) RETURN n.name",
+                         parameters("movieId", movieId)));
+        if (result.hasNext()) {
+            return result.next().get("n.name").asString();
+        }
+        return "Unknown Movie";
+    }
+}
 
+public List<String> getActorsInMovie(String movieId) {
+    List<String> actors = new ArrayList<>();
+    try (Session session = driver.session()) {
+        StatementResult result = session.run("MATCH (a:actor)-[:ACTED_IN]->(m:movie {id: $movieId}) RETURN a",
+                                             parameters("movieId", movieId));
+        while (result.hasNext()) {
+            Record record = result.next();
+            actors.add(record.get("a.id").asString());
+        }
+    }
+    return actors;
+}
   public void addRelationship(String movieId, String actorId) {
     try (Session session = driver.session()) {
       session.writeTransaction(
@@ -77,13 +100,6 @@ public class DatabaseExecutor {
       return result.hasNext();
     }
   }
-public String getMovieName(String movieId) {
-    try (Session session = driver.session()) {
-        StatementResult result = session.run("MATCH (n:movie {id: $movieId}) RETURN n.name",
-                                             parameters("movieId", movieId));
-   
-            return result.next().get("n.name").asString();
-
-}
+ 
   public void close() { driver.close(); }
 }
