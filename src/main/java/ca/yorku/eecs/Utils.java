@@ -13,7 +13,7 @@ import java.util.stream.Collectors;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-class Utils {
+public class Utils {
   public static Map<String, String> splitQuery(String query)
       throws UnsupportedEncodingException {
     Map<String, String> queryPairs = new LinkedHashMap<String, String>();
