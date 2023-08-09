@@ -4,6 +4,7 @@ import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import org.json.JSONArray;
@@ -12,42 +13,45 @@ import org.json.JSONObject;
 
 public class ProjectHttpHandler implements HttpHandler {
   private DatabaseExecutor databaseExecutor = null;
+
   @Override
   public void handle(HttpExchange exchange) throws IOException {
+
     if (databaseExecutor == null) {
       databaseExecutor = new DatabaseExecutor();
     }
+
     String requestPath = exchange.getRequestURI().getPath();
-    switch (requestPath) {
-    case "/api/v1/addActor":
-      addActor(exchange);
-      break;
-    case "/api/v1/addMovie":
-      addMovie(exchange);
-      break;
-    case "/api/v1/addRelationship":
-      addRelationship(exchange);
-      break;
-    case "/api/v1/getActor":
-      getActor(exchange);
-      break;
-    case "/api/v1/getMovie":
-      getMovie(exchange);
-      break;
-    case "/api/v1/hasRelationship":
-      hasRelationship(exchange);
-      break;
-    case "/api/v1/computeBaconNumber":
-      computeBaconNumber(exchange);
-      break;
-    case "/api/v1/computeBaconPath":
-      computeBaconPath(exchange);
-      break;
-    case "/api/v1/clearDatabase":
-      clearDatabase(exchange);
-      break;
-    default:
-      invalidRequest(exchange);
+    switch (requestPath.split("7687")[1]) {
+      case "/api/v1/addActor":
+        addActor(exchange);
+        break;
+      case "/api/v1/addMovie":
+        addMovie(exchange);
+        break;
+      case "/api/v1/addRelationship":
+        addRelationship(exchange);
+        break;
+      case "/api/v1/getActor":
+        getActor(exchange);
+        break;
+      case "/api/v1/getMovie":
+        getMovie(exchange);
+        break;
+      case "/api/v1/hasRelationship":
+        hasRelationship(exchange);
+        break;
+      case "/api/v1/computeBaconNumber":
+        computeBaconNumber(exchange);
+        break;
+      case "/api/v1/computeBaconPath":
+        computeBaconPath(exchange);
+        break;
+      case "/api/v1/clearDatabase":
+        clearDatabase(exchange);
+        break;
+      default:
+        invalidRequest(exchange);
     }
   }
 
@@ -78,14 +82,14 @@ public class ProjectHttpHandler implements HttpHandler {
     }
     /* Edge case */
     if (databaseExecutor.checkIfActorIdExists(
-            jsonHttpBody.getString("actorId"))) {
+        jsonHttpBody.getString("actorId"))) {
       sendResponse(exchange, 400, "The 'actorId' already exists.");
       return;
     }
     /* Add to database, or send HTTP 500 in case of database error */
     try {
       databaseExecutor.addActor(jsonHttpBody.getString("actorId"),
-                                jsonHttpBody.getString("name"));
+          jsonHttpBody.getString("name"));
     } catch (Exception e) {
       e.printStackTrace();
       sendResponse(exchange, 500, "Database error.");
@@ -121,14 +125,14 @@ public class ProjectHttpHandler implements HttpHandler {
     }
     /* Edge case */
     if (databaseExecutor.checkIfMovieIdExists(
-            jsonHttpBody.getString("movieId"))) {
+        jsonHttpBody.getString("movieId"))) {
       sendResponse(exchange, 400, "The 'movieId' already exists.");
       return;
     }
     /* Add to database, or send HTTP 500 in case of database error */
     try {
       databaseExecutor.addMovie(jsonHttpBody.getString("movieId"),
-                                jsonHttpBody.getString("name"));
+          jsonHttpBody.getString("name"));
     } catch (Exception e) {
       e.printStackTrace();
       sendResponse(exchange, 500, "Database error.");
@@ -164,15 +168,15 @@ public class ProjectHttpHandler implements HttpHandler {
     }
     /* Edge case */
     if (databaseExecutor.checkIfRelationshipExists(
-            jsonHttpBody.getString("movieId"),
-            jsonHttpBody.getString("actorId"))) {
+        jsonHttpBody.getString("movieId"),
+        jsonHttpBody.getString("actorId"))) {
       sendResponse(exchange, 400, "Relationship already exists.");
       return;
     }
     /* Add to database, or send HTTP 500 in case of database error */
     try {
       databaseExecutor.addRelationship(jsonHttpBody.getString("movieId"),
-                                       jsonHttpBody.getString("actorId"));
+          jsonHttpBody.getString("actorId"));
     } catch (Exception e) {
       e.printStackTrace();
       sendResponse(exchange, 500, "Database error.");
@@ -182,8 +186,43 @@ public class ProjectHttpHandler implements HttpHandler {
   }
 
   private void getActor(HttpExchange exchange) throws IOException {
-    String response = "getActor";
-    sendResponse(exchange, 404, response);
+
+    if (checkRequestMethod(exchange, "GET")) {
+      sendResponse(exchange, 405, "Endpoint only accepts GET requests.");
+      return;
+    }
+    String query = exchange.getRequestURI().getQuery();
+    System.out.println("Query: " + query);
+    if (query != null) {
+
+      String field = query.split("=", 0)[0];
+
+      if (field.equals("actorId")) {
+        String id = query.split("=")[1];
+
+
+        if (!databaseExecutor.checkIfActorIdExists(id)) {
+          String err = "The 'actorId: "+ id +" does not exists.";
+          sendResponse(exchange, 404, err);
+          return;
+        }
+
+        JSONObject result = databaseExecutor.getActor(id);
+      
+        sendResponse(exchange, 200, result.toString());
+
+
+        return;
+      } else {
+        sendResponse(exchange, 400, "Incorrect Field: "+field);
+        return;
+      }
+
+    } else {
+      sendResponse(exchange, 400, "No Query");
+      return;
+    }
+
   }
 
   private void getMovie(HttpExchange exchange) throws IOException {
@@ -232,7 +271,7 @@ public class ProjectHttpHandler implements HttpHandler {
     jsonObject.put("movieId", movieId);
     /* Send response if relationship exists, or not */
     if (databaseExecutor.checkIfRelationshipExists(
-            queryParams.get("movieId"), queryParams.get("actorId"))) {
+        queryParams.get("movieId"), queryParams.get("actorId"))) {
       jsonObject.put("hasRelationship", true);
       sendResponse(exchange, 200, jsonObject.toString());
       return;
@@ -343,20 +382,21 @@ public class ProjectHttpHandler implements HttpHandler {
   }
 
   private void invalidRequest(HttpExchange exchange) throws IOException {
-    String response = "invalidRequest";
+    String response = "invalid Request";
     sendResponse(exchange, 400, response);
   }
 
   private void sendResponse(HttpExchange exchange, int statusCode,
-                            String response) throws IOException {
+      String response) throws IOException {
     exchange.sendResponseHeaders(statusCode, response.length());
     OutputStream outputStream = exchange.getResponseBody();
     outputStream.write(response.getBytes());
     outputStream.close();
   }
+  
 
   private boolean checkRequestMethod(HttpExchange exchange,
-                                     String requestMethod) {
+      String requestMethod) {
     return !(exchange.getRequestMethod().equals(requestMethod));
   }
 }

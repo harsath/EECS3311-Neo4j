@@ -2,9 +2,13 @@ package ca.yorku.eecs;
 
 import static org.neo4j.driver.v1.Values.parameters;
 
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+
+import org.json.JSONArray;
+import org.json.JSONObject;
 import org.neo4j.driver.v1.AuthTokens;
 import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.Driver;
@@ -12,47 +16,51 @@ import org.neo4j.driver.v1.GraphDatabase;
 import org.neo4j.driver.v1.Record;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.StatementResult;
+import org.neo4j.driver.v1.Transaction;
+import org.neo4j.driver.v1.Value;
 import org.neo4j.driver.v1.types.Node;
 import org.neo4j.driver.v1.types.Path;
 
 public class DatabaseExecutor {
   private Driver driver;
   private String uriDb;
+
   /* Database credentials are as mentioned in the project handout */
   private static String username = "neo4j";
   private static String password = "12345678";
+
+  /*
+   * TODO:
+   * Create global Class to keep all public objects as required
+   */
   public static String kevinBaconActorId = "nm0000102";
 
   public DatabaseExecutor() {
     uriDb = "bolt://localhost:7687";
     Config config = Config.builder().withoutEncryption().build();
-    driver = GraphDatabase.driver(uriDb, AuthTokens.basic(username, password),
-                                  config);
+    driver = GraphDatabase.driver(uriDb, AuthTokens.basic(username, password), config);
   }
 
   public void addActor(String id, String name) {
     try (Session session = driver.session()) {
       session.writeTransaction(
-          tx
-          -> tx.run("MERGE (a:actor {id: $id, name: $name})",
-                    parameters("id", id, "name", name)));
+          tx -> tx.run("MERGE (a:actor {id: $id, name: $name})",
+              parameters("id", id, "name", name)));
     }
   }
 
   public void addMovie(String id, String name) {
     try (Session session = driver.session()) {
       session.writeTransaction(
-          tx
-          -> tx.run("MERGE (a:movie {id: $id, name: $name})",
-                    parameters("id", id, "name", name)));
+          tx -> tx.run("MERGE (a:movie {id: $id, name: $name})",
+              parameters("id", id, "name", name)));
     }
   }
 
   public void addRelationship(String movieId, String actorId) {
     try (Session session = driver.session()) {
       session.writeTransaction(
-          tx
-          -> tx.run(
+          tx -> tx.run(
               "MATCH (a:actor), (m:movie) WHERE a.id = $actorId AND m.id = $movieId CREATE (a)-[r:ACTED_IN]->(m)",
               parameters("actorId", actorId, "movieId", movieId)));
     }
@@ -60,18 +68,16 @@ public class DatabaseExecutor {
 
   public boolean checkIfActorIdExists(String actorId) {
     try (Session session = driver.session()) {
-      StatementResult result =
-          session.run("MATCH (n:actor {id: $actorId}) RETURN n",
-                      parameters("actorId", actorId));
+      StatementResult result = session.run("MATCH (n:actor {id: $actorId}) RETURN n",
+          parameters("actorId", actorId));
       return result.hasNext();
     }
   }
 
   public boolean checkIfMovieIdExists(String movieId) {
     try (Session session = driver.session()) {
-      StatementResult result =
-          session.run("MATCH (n:movie {id: $movieId}) RETURN n",
-                      parameters("movieId", movieId));
+      StatementResult result = session.run("MATCH (n:movie {id: $movieId}) RETURN n",
+          parameters("movieId", movieId));
       return result.hasNext();
     }
   }
@@ -79,8 +85,7 @@ public class DatabaseExecutor {
   public boolean checkIfRelationshipExists(String movieId, String actorId) {
     try (Session session = driver.session()) {
       StatementResult result = session.writeTransaction(
-          tx
-          -> tx.run(
+          tx -> tx.run(
               "MATCH (a:actor)-[:ACTED_IN]->(m:movie) WHERE a.id = $actorId AND m.id = $movieId RETURN a, m",
               parameters("actorId", actorId, "movieId", movieId)));
       return result.hasNext();
@@ -90,11 +95,9 @@ public class DatabaseExecutor {
   public List<String> getBaconPath(String startNodeId) {
     List<String> returner = new ArrayList<>();
     try (Session session = driver.session()) {
-      String cypherQuery =
-          "MATCH p=shortestPath((start:actor {id: $startNodeId})-[*]-(end:actor {id: $endNodeId})) RETURN p";
-      StatementResult result =
-          session.run(cypherQuery, parameters("startNodeId", startNodeId,
-                                              "endNodeId", kevinBaconActorId));
+      String cypherQuery = "MATCH p=shortestPath((start:actor {id: $startNodeId})-[*]-(end:actor {id: $endNodeId})) RETURN p";
+      StatementResult result = session.run(cypherQuery, parameters("startNodeId", startNodeId,
+          "endNodeId", kevinBaconActorId));
       if (result.hasNext()) {
         Record record = result.next();
         Path path = record.get("p").asPath();
@@ -110,11 +113,9 @@ public class DatabaseExecutor {
   public Integer getBaconNumber(String startNodeId) {
     Integer returner = 0;
     try (Session session = driver.session()) {
-      String cypherQuery =
-          "MATCH p=shortestPath((start:actor {id: $startNodeId})-[*]-(end:actor {id: $endNodeId})) RETURN p";
-      StatementResult result =
-          session.run(cypherQuery, parameters("startNodeId", startNodeId,
-                                              "endNodeId", kevinBaconActorId));
+      String cypherQuery = "MATCH p=shortestPath((start:actor {id: $startNodeId})-[*]-(end:actor {id: $endNodeId})) RETURN p";
+      StatementResult result = session.run(cypherQuery, parameters("startNodeId", startNodeId,
+          "endNodeId", kevinBaconActorId));
       if (result.hasNext()) {
         Record record = result.next();
         Path path = record.get("p").asPath();
@@ -135,11 +136,45 @@ public class DatabaseExecutor {
     return returner;
   }
 
+  public JSONObject getActor(String id) {
+    JSONObject jsonResult = new JSONObject();
+
+    try (Session session = driver.session()) {
+
+      String movieCypherQuery = "MATCH (a:actor{id: $actorId})-[r]->(m) RETURN m.id";
+      String nameCypherQuery = "MATCH (a:actor{id: $actorId}) RETURN a.name";
+      try (Transaction tx = session.beginTransaction()) {
+        StatementResult movies = tx.run(movieCypherQuery, parameters("actorId", id));
+        System.out.println(movies);
+        JSONArray listOfMovies = new JSONArray();
+        while (movies.hasNext()) {
+          Record record = movies.next();
+          Value movieId = record.get("m.id");
+
+          if (!movieId.isNull()) {
+            listOfMovies.put(movieId.asString());
+          }
+        }
+        jsonResult.put("actorId", id);
+        StatementResult actorNameSearch = tx.run(nameCypherQuery, parameters("actorId", id));
+        jsonResult.put("name", actorNameSearch.next().get("a.name").asString());
+        jsonResult.put("movies", listOfMovies);
+
+        return jsonResult;  
+      } catch (Exception e) {
+        e.printStackTrace();
+      }
+    }
+    return null;  
+  }
+
   public void clearDatabase() {
     try (Session session = driver.session()) {
       session.writeTransaction(tx -> tx.run("MATCH (n) DETACH DELETE n"));
     }
   }
 
-  public void close() { driver.close(); }
+  public void close() {
+    driver.close();
+  }
 }
