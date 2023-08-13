@@ -39,6 +39,17 @@ public class DatabaseExecutor {
     }
   }
 
+  public void addAward(String actorId, String movieId, String award) {
+    try (Session session = driver.session()) {
+      session.writeTransaction(
+          tx
+          -> tx.run(
+              "MATCH (a:actor {id: $actorId})-[r:ACTED_IN]->(m:movie {id: $movieId}) SET r.award = $award",
+              parameters("actorId", actorId, "movieId", movieId, "award",
+                         award)));
+    }
+  }
+
   public void addMovie(String id, String name) {
     try (Session session = driver.session()) {
       session.writeTransaction(
@@ -103,6 +114,22 @@ public class DatabaseExecutor {
           returner.add(node.get("id").asString());
         }
       }
+    }
+    return returner;
+  }
+
+  public List<String> getAward(String movieId, String award) {
+    List<String> returner = new ArrayList<>();
+    try (Session session = driver.session()) {
+      String cypherQuery =
+          "MATCH (a:actor)-[r:ACTED_IN]->(m:movie {id: $movieId}) WHERE r.award = $award RETURN a.name as actorName";
+      StatementResult result = session.run(
+          cypherQuery, parameters("award", award, "movieId", movieId));
+      while (result.hasNext()) {
+        returner.add(result.next().get("actorName").asString());
+      }
+    } catch (Exception e) {
+      e.printStackTrace();
     }
     return returner;
   }
