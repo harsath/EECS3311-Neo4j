@@ -18,6 +18,7 @@ movieList=(
     "nm0000004 Pursuit of Happyness"
     "nm0000005 Iron Man"
     "nm0000006 Top Gun"
+    "nm0000012 Interstellar"
 )
 relationshipList=(
     "nm0000001 nm0000008"

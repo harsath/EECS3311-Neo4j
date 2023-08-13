@@ -159,6 +159,30 @@ public class DatabaseExecutor {
     return returner;
   }
 
+  public Pair<String, List<String>> getMovie(String movieId) {
+    Pair<String, List<String>> returner = new Pair<>("", new ArrayList<>());
+    try (Session session = driver.session()) {
+      StatementResult movieNameResult =
+          session.run("MATCH (a:movie {id: $movieId}) RETURN a.name AS name",
+                      parameters("movieId", movieId));
+      returner.a = movieNameResult.next().get("name").asString();
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+    try (Session session = driver.session()) {
+      StatementResult actorMovieIdsResult = session.run(
+          "MATCH (m:movie {id: $movieId})<-[:ACTED_IN]-(a:actor) RETURN a.id as actorId",
+          parameters("movieId", movieId));
+      for (Record record : actorMovieIdsResult.list()) {
+        String val = record.get("actorId").asString();
+        returner.b.add(val);
+      }
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+    return returner;
+  }
+
   public void clearDatabase() {
     try (Session session = driver.session()) {
       session.writeTransaction(tx -> tx.run("MATCH (n) DETACH DELETE n"));

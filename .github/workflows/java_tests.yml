@@ -43,4 +43,4 @@ jobs:
         run: | 
           robot robot_tests/addActorTests.robot robot_tests/addMovieTests.robot robot_tests/addRelationshipTests.robot robot_tests/hasRelationshipTests.robot
           bash robot_tests/baconTestsDatabase.sh
-          robot robot_tests/computeBaconPathTests.robot robot_tests/computeBaconNumberTests.robot
+          robot robot_tests/computeBaconPathTests.robot robot_tests/getActorTests.robot robot_tests/getMoviesTests.robot
