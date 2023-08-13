@@ -43,6 +43,12 @@ public class ProjectHttpHandler implements HttpHandler {
     case "/api/v1/computeBaconPath":
       computeBaconPath(exchange);
       break;
+    case "/api/v1/addAward":
+      addAward(exchange);
+      break;
+    case "/api/v1/getAward":
+      getAward(exchange);
+      break;
     case "/api/v1/clearDatabase":
       clearDatabase(exchange);
       break;
@@ -394,6 +400,110 @@ public class ProjectHttpHandler implements HttpHandler {
       jsonArray.put(id);
     }
     jsonObject.put("baconPath", jsonArray);
+    sendResponse(exchange, 200, jsonObject.toString());
+  }
+
+  private void addAward(HttpExchange exchange) throws IOException {
+    /* Unsupported HTTP method to this API endpoint */
+    if (checkRequestMethod(exchange, "GET")) {
+      sendResponse(exchange, 405, "Endpoint only accepts GET requests.");
+      return;
+    }
+    String rawQuery = exchange.getRequestURI().getRawQuery();
+    /* Make sure useragent passes query-string */
+    if (rawQuery == null || rawQuery.isEmpty()) {
+      sendResponse(exchange, 405, "Must pass query to this endpoint.");
+      return;
+    }
+    /* Parse query string into a hashmap */
+    Map<String, String> queryParams = Utils.splitQuery(rawQuery);
+    /* Check if query property 'actorId' exists */
+    if (!queryParams.containsKey("actorId")) {
+      sendResponse(exchange, 400, "Must include 'actorId'.");
+      return;
+    }
+    String actorId = queryParams.get("actorId");
+    /* Check if 'actorId' exists in database */
+    if (!databaseExecutor.checkIfActorIdExists(actorId)) {
+      sendResponse(exchange, 404, "'actorId' does not exist on database.");
+      return;
+    }
+    /* Check if query property 'movieId' exists */
+    if (!queryParams.containsKey("movieId")) {
+      sendResponse(exchange, 400, "Must include 'movieId'.");
+      return;
+    }
+    String movieId = queryParams.get("movieId");
+    /* Check if 'actorId' exists in database */
+    if (!databaseExecutor.checkIfMovieIdExists(movieId)) {
+      sendResponse(exchange, 404, "'movieId' does not exist on database.");
+      return;
+    }
+    /* Check if 'actorId' exists in database */
+    if (!databaseExecutor.checkIfRelationshipExists(movieId, actorId)) {
+      sendResponse(exchange, 400, "No relationship exists between given 'actorId' and 'movieId'");
+      return;
+    }
+    /* Check if query property 'award' exists */
+    if (!queryParams.containsKey("award")) {
+      sendResponse(exchange, 400, "Must include 'award'.");
+      return;
+    }
+    String award = queryParams.get("award");
+    
+    /* Add to database, or send HTTP 500 in case of database error */
+    try {
+      databaseExecutor.addAward(actorId, movieId, award);
+    } catch (Exception e) {
+      e.printStackTrace();
+      sendResponse(exchange, 500, "Database error.");
+      return;
+    }
+    sendResponse(exchange, 200, "Added successfully.");
+  }
+
+  private void getAward(HttpExchange exchange) throws IOException {
+    /* Unsupported HTTP method to this API endpoint */
+    if (checkRequestMethod(exchange, "GET")) {
+      sendResponse(exchange, 405, "Endpoint only accepts GET requests.");
+      return;
+    }
+    String rawQuery = exchange.getRequestURI().getRawQuery();
+    /* Make sure useragent passes query-string */
+    if (rawQuery == null || rawQuery.isEmpty()) {
+      sendResponse(exchange, 405, "Must pass query to this endpoint.");
+      return;
+    }
+    /* Parse query string into a hashmap */
+    Map<String, String> queryParams = Utils.splitQuery(rawQuery);
+    /* Check if query property 'movieId' exists */
+    if (!queryParams.containsKey("movieId")) {
+      sendResponse(exchange, 400, "Must include 'movieId'.");
+      return;
+    }
+    String movieId = queryParams.get("movieId");
+    /* Check if 'actorId' exists in database */
+    if (!databaseExecutor.checkIfMovieIdExists(movieId)) {
+      sendResponse(exchange, 404, "'movieId' does not exist on database.");
+      return;
+    }
+    /* Check if query property 'award' exists */
+    if (!queryParams.containsKey("award")) {
+      sendResponse(exchange, 400, "Must include 'award'.");
+      return;
+    }
+    String award = queryParams.get("award");
+    JSONObject jsonObject = new JSONObject();
+    JSONArray jsonArray = new JSONArray();
+    /* Get list of actor names with the given `award` in a particular movie */
+    List<String> actors = databaseExecutor.getAward(movieId, award);
+    /* Send response path on response */
+    for (String id : actors) {
+      jsonArray.put(id);
+    }
+    jsonObject.put("actors", jsonArray);
+    jsonObject.put("movieId", movieId);
+    jsonObject.put("award", award);
     sendResponse(exchange, 200, jsonObject.toString());
   }
 

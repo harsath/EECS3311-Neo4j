@@ -1,0 +1,40 @@
+This project the following custom feature:
+    (a) Add an award for an actor in a particular movie
+    (b) Get list of actors whome received a particular award in a particular movie
+
+HTTP handlers that implement this feature:
+    (a) /api/v1/addAward
+    (b) /api/v1/getAward
+
+Parameters that must be specified to the HTTP handlers:
+    (a) /api/v1/addAward
+        (a1) award
+        (a2) movieId
+        (a3) actorId
+    (b) /api/v1/getAward
+        (b1) award
+        (b2) movieId
+
+Description of the parameters:
+    (a1) Type of award that is given to the actorId
+    (a2) Movie ID of the movie in which the actor has acted in
+    (a3) Actor ID of the actor to whome the award is given to
+
+    (b1) Type of award to be queried for in a particular movie
+    (b2) Movie ID of the movie in which the query should be performed
+
+Expected response:
+    (a)
+        200 OK - For successfully adding award to an actor
+        400 BAD RESPONSE - If the request does not contain required URI parameters
+        404 NOT FOUND - If either movieId or actorId is not found in the database. If no relationship exist between actorId and movieId
+        500 INTERNAL SERVER ERROR - If there was a database error (Java exception)
+    (b)
+        200 OK - For successfully returning award
+        400 BAD RESPONSE - If the request does not contain required URI parameters
+        404 NOT FOUND - If either movieId is not found in the database.
+        500 INTERNAL SERVER ERROR - If there was a database error (Java exception)
+
+Examples:
+    (a) curl http://localhost:8080/api/v1/addAward?award=BestActor&movieId=nm0000012&actorId=nm0000007
+    (b) curl http://localhost:8080/api/v1/getAward?award=BestActor&movieId=nm00000032
