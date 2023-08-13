@@ -182,8 +182,41 @@ public class ProjectHttpHandler implements HttpHandler {
   }
 
   private void getActor(HttpExchange exchange) throws IOException {
-    String response = "getActor";
-    sendResponse(exchange, 404, response);
+    /* Unsupported HTTP method to this API endpoint */
+    if (checkRequestMethod(exchange, "GET")) {
+      sendResponse(exchange, 405, "Endpoint only accepts GET requests.");
+      return;
+    }
+    String rawQuery = exchange.getRequestURI().getRawQuery();
+    /* Make sure useragent passes query-string */
+    if (rawQuery == null || rawQuery.isEmpty()) {
+      sendResponse(exchange, 405, "Must pass query to this endpoint.");
+      return;
+    }
+    /* Parse query string into a hashmap */
+    Map<String, String> queryParams = Utils.splitQuery(rawQuery);
+    /* Check if query property 'actorId' exists */
+    if (!queryParams.containsKey("actorId")) {
+      sendResponse(exchange, 400, "Must include 'actorId'.");
+      return;
+    }
+    String actorId = queryParams.get("actorId");
+    /* Check if 'actorId' exists in database */
+    if (!databaseExecutor.checkIfActorIdExists(actorId)) {
+      sendResponse(exchange, 404, "'actorId' does not exist on database.");
+      return;
+    }
+    JSONObject jsonObject = new JSONObject();
+    JSONArray jsonArray = new JSONArray();
+    Pair<String, List<String>> getActorQuery =
+        databaseExecutor.getActor(actorId);
+    for (String movieId : getActorQuery.b) {
+      jsonArray.put(movieId);
+    }
+    jsonObject.put("movies", jsonArray);
+    jsonObject.put("name", getActorQuery.a);
+    jsonObject.put("actorId", actorId);
+    sendResponse(exchange, 200, jsonObject.toString());
   }
 
   private void getMovie(HttpExchange exchange) throws IOException {
