@@ -12,17 +12,17 @@ addActorTest1
     ${params}=      Create Dictionary   name=Brad Pitt  actorId=nm0000001
     ${resp}=        PUT On Session      localhost   /api/v1/addActor    json=${params}  headers=${headers}  expected_status=200
 
-addActorTest1
+addActorTest3
     ${headers}=     Create Dictionary   Content-Type=application/json
     ${params}=      Create Dictionary   name=Bradley Cooper  actorId=nm0000003
     ${resp}=        PUT On Session      localhost   /api/v1/addActor    json=${params}  headers=${headers}  expected_status=200
 
-addActorTest2
+addActorTest4
     ${headers}=     Create Dictionary   Content-Type=application/json
     ${params}=      Create Dictionary   name=Brad Pitt
     ${resp}=        PUT On Session      localhost   /api/v1/addActor    json=${params}  headers=${headers}  expected_status=400
 
-addActorTest3
+addActorTest5
     ${headers}=     Create Dictionary   Content-Type=application/json
     ${params}=      Create Dictionary   name=Brad Pitt  actorId=nm0000001
     ${resp}=        PUT On Session      localhost   /api/v1/addActor    json=${params}  headers=${headers}  expected_status=400
